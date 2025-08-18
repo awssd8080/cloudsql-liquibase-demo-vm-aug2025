@@ -1,40 +1,41 @@
-name: Liquibase deploy via IAP SSH
+name: Deploy Liquibase via IAP SSH
 
 on:
   push:
-    branches: stage
+    branches: [main, stage]
 
 jobs:
-  deploy:
+  liquibase-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      # 1) Auth to GCP using SA key
-      - name: Auth to Google Cloud
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Authenticate to Google Cloud
+      - name: Authenticate with GCP
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 2) Install gcloud
-      - name: Set up gcloud
+      # 2. Set up gcloud CLI
+      - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: sd-liqui-dev
 
-      # 3) (Optional) Make project explicit
-      - name: Set project
-        run: gcloud config set project sd-liqui-dev
-
-      # 4) SSH to VM over IAP and run Liquibase
-      - name: Deploy via IAP SSH
+      # 3. Run Liquibase over IAP SSH
+      - name: Run Liquibase update on VM
         uses: google-github-actions/ssh-compute@v1
         with:
           project_id: sd-liqui-dev
           zone: us-central1-a
           instance_name: liquibase-vm
-          ssh_username: ${{ secrets.IAP_USER }}          # e.g., liquibase-poc
+          ssh_username: ${{ secrets.IAP_USER }}
           ssh_private_key: ${{ secrets.IAP_SSH_PRIVATE_KEY }}
           ssh_extra_args: --tunnel-through-iap
           command: |
+            cd ~/cloudsql-liquibase-demo-vm-aug2025
             export CLASSPATH=./postgresql.jar
             liquibase \
               --url="${{ secrets.DB_URL }}" \

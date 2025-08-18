@@ -1,0 +1,30 @@
+name: Liquibase Deploy via IAP SSH
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy Liquibase via SSH
+        uses: google-github-actions/ssh-compute@v1
+        with:
+          instance_name: ${{ secrets.IAP_INSTANCE }}
+          zone: us-central1-a
+          ssh_private_key: ${{ secrets.IAP_SSH_PRIVATE_KEY }}
+          ssh_username: ${{ secrets.IAP_USER }}
+          command: |
+            export CLASSPATH=./postgresql.jar
+            liquibase \
+              --url="${{ secrets.DB_URL }}" \
+              --username="${{ secrets.DB_USERNAME }}" \
+              --password="${{ secrets.DB_PASSWORD }}" \
+              --driver=org.postgresql.Driver \
+              --changelog-file=db/changelog-master.xml \
+              update

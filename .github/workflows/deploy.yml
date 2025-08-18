@@ -2,7 +2,7 @@ name: Liquibase Deploy via IAP SSH
 
 on:
   push:
-    branches: [main]
+    branches: stage
 
 jobs:
   deploy:

@@ -1,52 +1,34 @@
-name: Liquibase Deploy via Cloud SQL Proxy
-
 on:
   push:
-    branches: [stage]
+    branches: ["main"]
 
 jobs:
-  deploy:
+  liquibase-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: sd-liqui-dev
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.SERVICE_ACCOUNT_JSON }}'
 
-      - name: Install Cloud SQL Proxy
-        run: |
-          curl -o cloud-sql-proxy https://dl.google.com/cloudsql/cloud-sql-proxy.linux.amd64
-          chmod +x cloud-sql-proxy
-
-      - name: Start Cloud SQL Proxy
-        run: |
-          ./cloud-sql-proxy "${{ secrets.CLOUDSQL_CONNECTION }}" &
-          sleep 10
-
-      - name: Install Liquibase
-        run: |
-          sudo apt-get update && sudo apt-get install unzip openjdk-17-jdk -y
-          curl -L -o liquibase.zip https://github.com/liquibase/liquibase/releases/download/v4.29.2/liquibase-4.29.2.zip
-          unzip liquibase.zip -d liquibase
-          sudo mv liquibase /opt/liquibase
-          export PATH=$PATH:/opt/liquibase
-
-      - name: Download PostgreSQL Driver
-        run: |
-          curl -L -o postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
-
-      - name: Run Liquibase
-        run: |
+    - name: SSH into VM and run Liquibase
+      uses: google-github-actions/ssh-compute@v0
+      with:
+        instance_name: ${{ secrets.VM_NAME }}
+        zone: ${{ secrets.VM_ZONE }}
+        ssh_private_key: ${{ secrets.SSH_KEY }}
+        command: |
+          cd /home/sreekanth/cloudsql-liquibase-demo-vm-aug2025
           export CLASSPATH=./postgresql.jar
-          /opt/liquibase/liquibase \
-            --url="jdbc:postgresql://172.16.128.5:5432/${{ secrets.DB_NAME }}" \
-            --username="${{ secrets.DB_USERNAME }}" \
-            --password="${{ secrets.DB_PASSWORD }}" \
+          liquibase \
+            --url="jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" \
+            --username=${{ secrets.DB_USER }} \
+            --password=${{ secrets.DB_PASS }} \
             --driver=org.postgresql.Driver \
-            --changeLogFile=db/changelog-master.xml \
+            --changelog-file=db/changelog-master.xml \
             update
+```

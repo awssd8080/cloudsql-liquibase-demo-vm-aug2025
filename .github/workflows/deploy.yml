@@ -30,7 +30,7 @@ jobs:
       with:
         instance_name: liquibase-vm
         zone: us-central1-a
-        user: root
+        user: github-actions
         project_id: sd-liqui-dev
         ssh_private_key: ${{ secrets.IAP_SSH_PRIVATE_KEY }}
         command: |

@@ -44,7 +44,7 @@ jobs:
         run: |
           export CLASSPATH=./postgresql.jar
           /opt/liquibase/liquibase \
-            --url="jdbc:postgresql://127.0.0.1:5432/${{ secrets.DB_NAME }}" \
+            --url="jdbc:postgresql://172.16.128.5:5432/${{ secrets.DB_NAME }}" \
             --username="${{ secrets.DB_USERNAME }}" \
             --password="${{ secrets.DB_PASSWORD }}" \
             --driver=org.postgresql.Driver \

@@ -23,7 +23,7 @@ jobs:
         gcloud compute scp --recurse ./db root@liquibase-vm:/opt/liquibase-project \
           --zone=us-central1-a \
           --tunnel-through-iap \
-          --project=hd-liquibase
+          --project=sd-liqui-dev
 
     - name: Run Liquibase on VM
       uses: google-github-actions/ssh-compute@v1

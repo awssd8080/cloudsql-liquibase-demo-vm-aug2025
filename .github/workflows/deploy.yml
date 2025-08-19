@@ -31,7 +31,7 @@ jobs:
         instance_name: liquibase-vm
         zone: us-central1-a
         user: root
-        project_id: hd-liquibase
+        project_id: sd-liqui-dev
         ssh_private_key: ${{ secrets.VM_SSH_KEY }}
         command: |
           cd /opt/liquibase-project

@@ -1,46 +1,52 @@
-name: Deploy Liquibase via IAP SSH
+name: Liquibase Deploy via Cloud SQL Proxy
 
 on:
   push:
-    branches: [main, stage]
+    branches: [stage]
 
 jobs:
-  liquibase-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. Authenticate to Google Cloud
-      - name: Authenticate with GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      # 2. Set up gcloud CLI
-      - name: Set up gcloud CLI
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: sd-liqui-dev
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # 3. Run Liquibase over IAP SSH
-      - name: Run Liquibase update on VM
-        uses: google-github-actions/ssh-compute@v1
-        with:
-          project_id: sd-liqui-dev
-          zone: us-central1-a
-          instance_name: liquibase-vm
-          ssh_username: ${{ secrets.IAP_USER }}
-          ssh_private_key: ${{ secrets.IAP_SSH_PRIVATE_KEY }}
-          ssh_extra_args: --tunnel-through-iap
-          command: |
-            cd ~/cloudsql-liquibase-demo-vm-aug2025
-            export CLASSPATH=./postgresql.jar
-            liquibase \
-              --url="${{ secrets.DB_URL }}" \
-              --username="${{ secrets.DB_USERNAME }}" \
-              --password="${{ secrets.DB_PASSWORD }}" \
-              --driver=org.postgresql.Driver \
-              --changelog-file=db/changelog-master.xml \
-              update
+      - name: Install Cloud SQL Proxy
+        run: |
+          curl -o cloud-sql-proxy https://dl.google.com/cloudsql/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+
+      - name: Start Cloud SQL Proxy
+        run: |
+          ./cloud-sql-proxy "${{ secrets.CLOUDSQL_CONNECTION }}" &
+          sleep 10
+
+      - name: Install Liquibase
+        run: |
+          sudo apt-get update && sudo apt-get install unzip openjdk-17-jdk -y
+          curl -L -o liquibase.zip https://github.com/liquibase/liquibase/releases/download/v4.29.2/liquibase-4.29.2.zip
+          unzip liquibase.zip -d liquibase
+          sudo mv liquibase /opt/liquibase
+          export PATH=$PATH:/opt/liquibase
+
+      - name: Download PostgreSQL Driver
+        run: |
+          curl -L -o postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+
+      - name: Run Liquibase
+        run: |
+          export CLASSPATH=./postgresql.jar
+          /opt/liquibase/liquibase \
+            --url="jdbc:postgresql://127.0.0.1:5432/${{ secrets.DB_NAME }}" \
+            --username="${{ secrets.DB_USERNAME }}" \
+            --password="${{ secrets.DB_PASSWORD }}" \
+            --driver=org.postgresql.Driver \
+            --changeLogFile=db/changelog-master.xml \
+            update

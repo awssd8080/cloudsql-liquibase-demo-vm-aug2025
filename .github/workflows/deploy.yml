@@ -38,7 +38,7 @@ jobs:
             set -e
             cd /opt/liquibase-project
             liquibase \
-              --url="jdbc:postgresql://10.190.19.3:5432/stage_db" \
+              --url="jdbc:postgresql://172.16.128.5:5432/stage_db" \
               --username=${{ secrets.DB_USER }} \
               --password=${{ secrets.DB_PASS }} \
               --changelog-file=db/changelog-master.xml \

@@ -1,34 +1,43 @@
+name: Stage Deploy
+
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
-  liquibase-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v2
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v1
       with:
-        credentials_json: '${{ secrets.SERVICE_ACCOUNT_JSON }}'
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: SSH into VM and run Liquibase
-      uses: google-github-actions/ssh-compute@v0
+    - name: Copy Liquibase files to VM
+      run: |
+        echo "Copying db directory to VM..."
+        gcloud compute scp --recurse ./db root@liquibase-vm:/opt/liquibase-project \
+          --zone=us-central1-a \
+          --tunnel-through-iap \
+          --project=hd-liquibase
+
+    - name: Run Liquibase on VM
+      uses: google-github-actions/ssh-compute@v1
       with:
-        instance_name: ${{ secrets.VM_NAME }}
-        zone: ${{ secrets.VM_ZONE }}
-        ssh_private_key: ${{ secrets.SSH_KEY }}
+        instance_name: liquibase-vm
+        zone: us-central1-a
+        user: root
+        project_id: hd-liquibase
+        ssh_private_key: ${{ secrets.VM_SSH_KEY }}
         command: |
-          cd /home/sreekanth/cloudsql-liquibase-demo-vm-aug2025
-          export CLASSPATH=./postgresql.jar
+          cd /opt/liquibase-project
           liquibase \
-            --url="jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" \
-            --username=${{ secrets.DB_USER }} \
-            --password=${{ secrets.DB_PASS }} \
-            --driver=org.postgresql.Driver \
+            --url="jdbc:postgresql://10.190.19.3:5432/stage_db" \
+            --username=liquibase_user \
+            --password=Welcome#123 \
             --changelog-file=db/changelog-master.xml \
             update
-```

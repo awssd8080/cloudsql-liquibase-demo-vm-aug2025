@@ -20,7 +20,7 @@ jobs:
     - name: Copy Liquibase files to VM
       run: |
         echo "Copying db directory to VM..."
-        gcloud compute scp --recurse ./db root@liquibase-vm:/opt/liquibase-project \
+        gcloud compute scp --recurse ./db github-actions@liquibase-vm:/opt/liquibase-project \
           --zone=us-central1-a \
           --tunnel-through-iap \
           --project=sd-liqui-dev
@@ -34,10 +34,13 @@ jobs:
         project_id: sd-liqui-dev
         ssh_private_key: ${{ secrets.IAP_SSH_PRIVATE_KEY }}
         command: |
-          cd /opt/liquibase-project
-          liquibase \
-            --url="jdbc:postgresql://10.190.19.3:5432/stage_db" \
-            --username=liquibase_user \
-            --password=Welcome#123 \
-            --changelog-file=db/changelog-master.xml \
-            update
+          bash -lc '
+            set -e
+            cd /opt/liquibase-project
+            liquibase \
+              --url="jdbc:postgresql://10.190.19.3:5432/stage_db" \
+              --username=${{ secrets.DB_USER }} \
+              --password=${{ secrets.DB_PASS }} \
+              --changelog-file=db/changelog-master.xml \
+              update
+          '

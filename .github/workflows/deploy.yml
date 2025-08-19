@@ -43,5 +43,4 @@ jobs:
               --password=${{ secrets.DB_PASSWORD }} \
               --changelog-file=db/changelog-master.xml \
               update \
-              --log-level=debug
-          '
+             '

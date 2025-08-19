@@ -39,8 +39,8 @@ jobs:
             cd /opt/liquibase-project
             liquibase \
               --url="jdbc:postgresql://172.16.128.5:5432/stage_db" \
-              --username=${{ secrets.DB_USER }} \
-              --password=${{ secrets.DB_PASS }} \
+              --username=${{ secrets.DB_USERNAME }} \
+              --password=${{ secrets.DB_PASSWORD }} \
               --changelog-file=db/changelog-master.xml \
               update
           '

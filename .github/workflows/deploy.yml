@@ -32,7 +32,7 @@ jobs:
         zone: us-central1-a
         user: root
         project_id: sd-liqui-dev
-        ssh_private_key: ${{ secrets.VM_SSH_KEY }}
+        ssh_private_key: ${{ secrets.IAP_SSH_PRIVATE_KEY }}
         command: |
           cd /opt/liquibase-project
           liquibase \
